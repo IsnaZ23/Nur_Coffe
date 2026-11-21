@@ -1,6 +1,6 @@
 "use client";
 
-import { createStore, kodeBaru } from "./store";
+import { createStore } from "./store";
 
 export type ItemKeranjang = {
   id_menu: number;
@@ -20,23 +20,31 @@ export type StatusPesanan =
   | "selesai"
   | "dibatalkan";
 
-export type PesananLokal = {
-  nomor_pesanan: string;
+export type Keranjang = {
   kode_meja: string;
+  items: ItemKeranjang[];
+};
+
+export type ItemPesananTampil = {
+  id_menu: number;
+  nama_menu: string;
+  jumlah: number;
+  harga_satuan: number;
+  subtotal: number;
+  catatan_item: string | null;
+};
+
+export type PesananTampil = {
+  nomor_pesanan: string;
   nomor_meja: string;
   nama_pemesan: string;
   catatan_pesanan: string | null;
-  items: ItemKeranjang[];
   total_harga: number;
   metode_bayar: MetodeBayar;
   status_bayar: StatusBayar;
   status_pesanan: StatusPesanan;
   dibuat_pada: string;
-};
-
-export type Keranjang = {
-  kode_meja: string;
-  items: ItemKeranjang[];
+  items: ItemPesananTampil[];
 };
 
 export const storeKeranjang = createStore<Keranjang>("nur_coffee_keranjang", () => ({
@@ -44,14 +52,17 @@ export const storeKeranjang = createStore<Keranjang>("nur_coffee_keranjang", () 
   items: [],
 }));
 
-export const storePesanan = createStore<PesananLokal[]>("nur_coffee_pesanan", () => []);
-
-export function tambahItem(menu: Omit<ItemKeranjang, "jumlah" | "catatan_item">, kode_meja: string) {
+export function tambahItem(
+  menu: Omit<ItemKeranjang, "jumlah" | "catatan_item">,
+  kode_meja: string
+) {
   storeKeranjang.tulis((prev) => {
     const dasar = prev.kode_meja === kode_meja ? prev.items : [];
     const ada = dasar.find((i) => i.id_menu === menu.id_menu);
     const items = ada
-      ? dasar.map((i) => (i.id_menu === menu.id_menu ? { ...i, jumlah: i.jumlah + 1 } : i))
+      ? dasar.map((i) =>
+          i.id_menu === menu.id_menu ? { ...i, jumlah: i.jumlah + 1 } : i
+        )
       : [...dasar, { ...menu, catatan_item: null, jumlah: 1 }];
     return { kode_meja, items };
   });
@@ -81,51 +92,6 @@ export function kosongkanKeranjang() {
 
 export function totalKeranjang(items: ItemKeranjang[]) {
   return items.reduce((sum, i) => sum + i.harga * i.jumlah, 0);
-}
-
-export function buatPesanan(input: {
-  kode_meja: string;
-  nomor_meja: string;
-  nama_pemesan: string;
-  catatan_pesanan: string | null;
-  items: ItemKeranjang[];
-  metode_bayar: MetodeBayar;
-}): PesananLokal {
-  const pesanan: PesananLokal = {
-    nomor_pesanan: kodeBaru("NOR"),
-    kode_meja: input.kode_meja,
-    nomor_meja: input.nomor_meja,
-    nama_pemesan: input.nama_pemesan,
-    catatan_pesanan: input.catatan_pesanan?.trim() || null,
-    items: input.items,
-    total_harga: totalKeranjang(input.items),
-    metode_bayar: input.metode_bayar,
-    status_bayar: "menunggu_bayar",
-    status_pesanan: "menunggu_bayar",
-    dibuat_pada: new Date().toISOString(),
-  };
-
-  storePesanan.tulis((prev) => [pesanan, ...prev]);
-  kosongkanKeranjang();
-  return pesanan;
-}
-
-export function konfirmasiBayar(nomor: string) {
-  storePesanan.tulis((prev) =>
-    prev.map((p) =>
-      p.nomor_pesanan === nomor
-        ? {
-            ...p,
-            status_bayar: "lunas",
-            status_pesanan: p.metode_bayar === "qris" ? "diproses" : p.status_pesanan,
-          }
-        : p
-    )
-  );
-}
-
-export function pesananMeja(kode_meja: string) {
-  return storePesanan.baca().filter((p) => p.kode_meja === kode_meja);
 }
 
 export const LABEL_STATUS: Record<StatusPesanan, string> = {

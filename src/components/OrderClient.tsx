@@ -3,22 +3,21 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { KategoriItem, MenuItem } from "@/lib/katalog";
-import { formatRupiah } from "@/lib/store";
+import { formatRupiah, formatWaktu } from "@/lib/format";
 import {
   LABEL_BAYAR,
   LABEL_STATUS,
-  buatPesanan,
-  konfirmasiBayar,
+  kosongkanKeranjang,
   storeKeranjang,
-  storePesanan,
   tambahItem,
   totalKeranjang,
   ubahCatatan,
   ubahJumlah,
   type ItemKeranjang,
   type MetodeBayar,
-  type PesananLokal,
+  type PesananTampil,
 } from "@/lib/pesanan";
+import { aksiBuatPesanan, aksiRiwayatMeja } from "@/app/order/actions";
 import {
   ArrowRightIcon,
   BagIcon,
@@ -48,12 +47,29 @@ function useKeranjang() {
   );
 }
 
-function usePesanan() {
-  return useSyncExternalStore(
-    storePesanan.langganan,
-    storePesanan.baca,
-    storePesanan.server
-  );
+function useRiwayatMeja(kodeMeja: string) {
+  const [riwayat, setRiwayat] = useState<PesananTampil[]>([]);
+  const [penanda, setPenanda] = useState(0);
+
+  useEffect(() => {
+    let batal = false;
+    void (async () => {
+      const data = await aksiRiwayatMeja(kodeMeja);
+      if (!batal) setRiwayat(data);
+    })();
+    return () => {
+      batal = true;
+    };
+  }, [kodeMeja, penanda]);
+
+  useEffect(() => {
+    // ponytail: muat ulang saat tab kembali aktif; upgrade ke SSE/socket kalau perlu realtime.
+    const onFokus = () => setPenanda((n) => n + 1);
+    window.addEventListener("focus", onFokus);
+    return () => window.removeEventListener("focus", onFokus);
+  }, []);
+
+  return { riwayat, muat: () => setPenanda((n) => n + 1) };
 }
 
 function MenuGambar({ item, nama }: { item: MenuItem; nama: string }) {
@@ -108,11 +124,11 @@ export default function OrderClient({
   const [tab, setTab] = useState<number>(kategori[0]?.id_kategori ?? 0);
   const [keranjangBuka, setKeranjangBuka] = useState(false);
   const [checkout, setCheckout] = useState(false);
-  const [struk, setStruk] = useState<PesananLokal | null>(null);
+  const [struk, setStruk] = useState<PesananTampil | null>(null);
   const [riwayatBuka, setRiwayatBuka] = useState(false);
 
   const keranjang = useKeranjang();
-  const riwayat = usePesanan();
+  const { riwayat, muat: muatRiwayat } = useRiwayatMeja(kodeMeja);
   const items = keranjang.kode_meja === kodeMeja ? keranjang.items : [];
   const total = totalKeranjang(items);
   const jumlahItem = items.reduce((n, i) => n + i.jumlah, 0);
@@ -133,12 +149,26 @@ export default function OrderClient({
       ? unggulan
       : semuaMenu;
 
-  const riwayatMeja = riwayat.filter((p) => p.kode_meja === kodeMeja);
+  const riwayatMeja = riwayat;
+
+  const [diMenu, setDiMenu] = useState(false);
+
+  useEffect(() => {
+    const el = document.getElementById("menu");
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setDiMenu(entry.isIntersecting),
+      { threshold: 0.15 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   return (
     <div className="relative overflow-x-hidden">
       <Navbar
         jumlahItem={jumlahItem}
+        jumlahRiwayat={riwayatMeja.length}
         nomorMeja={nomorMeja}
         onKeranjang={() => setKeranjangBuka(true)}
         onRiwayat={() => setRiwayatBuka(true)}
@@ -166,6 +196,13 @@ export default function OrderClient({
       />
       <Maps />
 
+      <BarKeranjang
+        tampil={diMenu && !keranjangBuka && !checkout && !struk}
+        jumlahItem={jumlahItem}
+        total={total}
+        onLihat={() => setKeranjangBuka(true)}
+      />
+
       <KeranjangPanel
         buka={keranjangBuka}
         items={items}
@@ -182,9 +219,11 @@ export default function OrderClient({
           items={items}
           total={total}
           onTutup={() => setCheckout(false)}
-          onSukses={(pesanan) => {
+          onSukses={async (pesanan) => {
             setCheckout(false);
             setStruk(pesanan);
+            kosongkanKeranjang();
+            await muatRiwayat();
           }}
           kodeMeja={kodeMeja}
           nomorMeja={nomorMeja}
@@ -194,14 +233,9 @@ export default function OrderClient({
       {struk && (
         <StrukModal
           pesanan={struk}
-          onTutup={() => setStruk(null)}
-          onBayar={(nomor) => {
-            konfirmasiBayar(nomor);
-            setStruk((s) =>
-              s && s.nomor_pesanan === nomor
-                ? { ...s, status_bayar: "lunas", status_pesanan: "diproses" }
-                : s
-            );
+          onTutup={() => {
+            setStruk(null);
+            void muatRiwayat();
           }}
         />
       )}
@@ -221,13 +255,115 @@ function scrollKe(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function BarKeranjang({
+  tampil,
+  jumlahItem,
+  total,
+  onLihat,
+}: {
+  tampil: boolean;
+  jumlahItem: number;
+  total: number;
+  onLihat: () => void;
+}) {
+  return (
+    <div
+      className={`fixed inset-x-0 bottom-0 z-40 px-4 pb-4 transition-all duration-300 ${
+        tampil && jumlahItem > 0
+          ? "translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-24 opacity-0"
+      }`}
+      aria-hidden={!tampil || jumlahItem === 0}
+    >
+      <button
+        type="button"
+        onClick={onLihat}
+        className="mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-full bg-primary px-5 py-3.5 text-cream-light shadow-2xl shadow-primary/40 transition hover:bg-primary-dark"
+      >
+        <span className="inline-flex items-center gap-2.5">
+          <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-cream-light/15">
+            <BagIcon className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <span className="text-left">
+            <span className="block text-[11px] font-semibold tracking-wide text-cream/85">
+              {jumlahItem} item di keranjang
+            </span>
+            <span className="block font-display text-lg font-semibold">
+              {formatRupiah(total)}
+            </span>
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold tracking-wide">
+          Lihat Keranjang
+          <ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      </button>
+    </div>
+  );
+}
+
+
+function BadgeMeja({
+  nomorMeja,
+  padat,
+}: {
+  nomorMeja: string;
+  padat: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide ${
+        padat
+          ? "bg-primary text-cream-light"
+          : "bg-primary/85 text-cream-light backdrop-blur"
+      }`}
+    >
+      <PinIcon className="h-3.5 w-3.5" aria-hidden="true" />
+      Meja - {nomorMeja}
+    </span>
+  );
+}
+
+function TombolNavbar({
+  utama = false,
+  padat,
+  label,
+  children,
+  onClick,
+}: {
+  utama?: boolean;
+  padat: boolean;
+  label: string;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full transition ${
+        utama
+          ? "bg-primary text-cream-light shadow-lg shadow-primary/30 hover:bg-primary-dark"
+          : padat
+            ? "border border-primary/35 text-primary hover:bg-primary hover:text-cream-light"
+            : "border border-cream-light/60 text-cream-light backdrop-blur hover:bg-cream-light/15"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function Navbar({
   jumlahItem,
+  jumlahRiwayat,
   nomorMeja,
   onKeranjang,
   onRiwayat,
 }: {
   jumlahItem: number;
+  jumlahRiwayat: number;
   nomorMeja: string;
   onKeranjang: () => void;
   onRiwayat: () => void;
@@ -242,7 +378,7 @@ function Navbar({
   }, []);
 
   const tautan = [
-    { label: "Explore", id: "explore" },
+    { label: "Home", id: "explore" },
     { label: "About", id: "about" },
     { label: "Menu", id: "menu" },
     { label: "Maps", id: "maps" },
@@ -256,40 +392,10 @@ function Navbar({
           : "bg-transparent"
       }`}
     >
-      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
-        <ul
-          className={`hidden items-center gap-7 text-sm font-medium tracking-wide md:flex ${
-            padat ? "text-ink" : "text-cream-light"
-          }`}
-        >
-          {tautan.map((t) => (
-            <li key={t.id}>
-              <button
-                type="button"
-                onClick={() => scrollKe(t.id)}
-                className="transition-colors hover:text-primary-soft focus-visible:text-primary-soft focus-visible:outline-none"
-                style={padat ? undefined : { textShadow: "0 1px 6px rgba(43,26,14,.6)" }}
-              >
-                {t.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex items-center gap-2.5 md:gap-3">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3.5">
+        <div className="flex items-center gap-5">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide ${
-              padat
-                ? "bg-primary text-cream-light"
-                : "bg-primary/85 text-cream-light backdrop-blur"
-            }`}
-          >
-            <PinIcon className="h-3.5 w-3.5" aria-hidden="true" />
-            Meja - {nomorMeja}
-          </span>
-
-          <span
-            className={`font-display text-lg italic font-semibold ${
+            className={`font-display text-lg italic font-semibold tracking-wide ${
               padat ? "text-primary" : "text-cream-light"
             }`}
             style={padat ? undefined : { textShadow: "0 1px 8px rgba(43,26,14,.6)" }}
@@ -297,23 +403,47 @@ function Navbar({
             Nur Coffee
           </span>
 
-          <button
-            type="button"
-            onClick={onRiwayat}
-            className={`hidden rounded-full border px-4 py-1.5 text-xs font-semibold tracking-wide transition sm:inline-flex ${
-              padat
-                ? "border-primary/40 text-primary hover:bg-primary hover:text-cream-light"
-                : "border-cream-light/60 text-cream-light hover:bg-cream-light/15 backdrop-blur"
+          <ul
+            className={`hidden items-center gap-6 text-sm font-medium tracking-wide md:flex ${
+              padat ? "text-ink" : "text-cream-light"
             }`}
           >
-            Riwayat Order
-          </button>
+            {tautan.map((t) => (
+              <li key={t.id}>
+                <button
+                  type="button"
+                  onClick={() => scrollKe(t.id)}
+                  className="transition-colors hover:text-primary-soft focus-visible:text-primary-soft focus-visible:outline-none"
+                  style={padat ? undefined : { textShadow: "0 1px 6px rgba(43,26,14,.6)" }}
+                >
+                  {t.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-          <button
-            type="button"
+        <div className="flex items-center justify-end gap-2">
+          <BadgeMeja nomorMeja={nomorMeja} padat={padat} />
+
+          <TombolNavbar
+            padat={padat}
+            label={`Buka riwayat order, ${jumlahRiwayat} pesanan`}
+            onClick={onRiwayat}
+          >
+            <ReceiptIcon className="h-5 w-5" aria-hidden="true" />
+            {jumlahRiwayat > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-cream-light px-1 text-[11px] font-bold text-primary">
+                {jumlahRiwayat}
+              </span>
+            )}
+          </TombolNavbar>
+
+          <TombolNavbar
+            utama
+            padat={padat}
+            label={`Buka keranjang, ${jumlahItem} item`}
             onClick={onKeranjang}
-            aria-label={`Buka keranjang, ${jumlahItem} item`}
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-cream-light shadow-lg shadow-primary/30 transition hover:bg-primary-dark"
           >
             <BagIcon className="h-5 w-5" aria-hidden="true" />
             {jumlahItem > 0 && (
@@ -321,7 +451,7 @@ function Navbar({
                 {jumlahItem}
               </span>
             )}
-          </button>
+          </TombolNavbar>
         </div>
       </nav>
     </header>
@@ -342,11 +472,7 @@ function Hero({ onExplore }: { onExplore: () => void }) {
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/80 via-ink/65 to-primary-dark/90" />
 
       <div className="mx-auto flex min-h-[100svh] max-w-3xl flex-col items-center justify-center px-6 text-center">
-        <span className="anim-fade inline-flex h-16 w-16 items-center justify-center rounded-full border border-cream-light/40 bg-cream-light/10 backdrop-blur">
-          <CupIcon className="h-8 w-8 text-cream-light" aria-hidden="true" />
-        </span>
-
-        <p className="anim-up mt-6 font-hand text-2xl text-cream">
+        <p className="anim-up font-hand text-2xl text-cream">
           freshly brewed everyday
         </p>
 
@@ -745,19 +871,20 @@ function CheckoutModal({
   kodeMeja: string;
   nomorMeja: string;
   onTutup: () => void;
-  onSukses: (pesanan: PesananLokal) => void;
+  onSukses: (pesanan: PesananTampil) => void | Promise<void>;
 }) {
   const [nama, setNama] = useState("");
   const [catatan, setCatatan] = useState("");
   const [metode, setMetode] = useState<MetodeBayar>("qris");
   const [galat, setGalat] = useState<string | null>(null);
+  const [sedang, setSedang] = useState(false);
   const refNama = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     refNama.current?.focus();
   }, []);
 
-  function kirim(e: React.FormEvent) {
+  async function kirim(e: React.FormEvent) {
     e.preventDefault();
     if (!nama.trim()) {
       setGalat("Nama pemesan wajib diisi.");
@@ -768,15 +895,33 @@ function CheckoutModal({
       setGalat("Keranjang kosong.");
       return;
     }
-    const pesanan = buatPesanan({
-      kode_meja: kodeMeja,
-      nomor_meja: nomorMeja,
-      nama_pemesan: nama.trim(),
-      catatan_pesanan: catatan,
-      items,
-      metode_bayar: metode,
-    });
-    onSukses(pesanan);
+
+    setSedang(true);
+    setGalat(null);
+    try {
+      const hasil = await aksiBuatPesanan({
+        kode_qr: kodeMeja,
+        nama_pemesan: nama.trim(),
+        catatan_pesanan: catatan,
+        metode_bayar: metode,
+        items: items.map((i) => ({
+          id_menu: i.id_menu,
+          jumlah: i.jumlah,
+          catatan_item: i.catatan_item,
+        })),
+      });
+
+      if (!hasil.ok) {
+        setGalat(hasil.pesan);
+        return;
+      }
+
+      await onSukses(hasil.pesanan);
+    } catch {
+      setGalat("Gagal mengirim pesanan. Coba lagi.");
+    } finally {
+      setSedang(false);
+    }
   }
 
   return (
@@ -888,9 +1033,10 @@ function CheckoutModal({
 
         <button
           type="submit"
-          className="mt-6 w-full rounded-full bg-primary py-3.5 text-sm font-semibold tracking-wide text-cream-light shadow-lg shadow-primary/30 transition hover:bg-primary-dark"
+          disabled={sedang}
+          className="mt-6 w-full rounded-full bg-primary py-3.5 text-sm font-semibold tracking-wide text-cream-light shadow-lg shadow-primary/30 transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-ink/30"
         >
-          Buat Pesanan
+          {sedang ? "Mengirim…" : "Buat Pesanan"}
         </button>
       </form>
     </div>
@@ -928,14 +1074,10 @@ function TombolMetode({
 function StrukModal({
   pesanan,
   onTutup,
-  onBayar,
 }: {
-  pesanan: PesananLokal;
+  pesanan: PesananTampil;
   onTutup: () => void;
-  onBayar: (nomor: string) => void;
 }) {
-  const [konfirmasi, setKonfirmasi] = useState(false);
-
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-ink/55 p-0 backdrop-blur-sm sm:items-center sm:p-6">
       <div className="anim-up max-h-[95svh] w-full max-w-md overflow-y-auto rounded-t-[2rem] bg-cream-light p-6 shadow-2xl sm:rounded-[2rem] sm:p-8">
@@ -974,7 +1116,7 @@ function StrukModal({
                   <em className="block text-xs text-ink/55">“{i.catatan_item}”</em>
                 )}
               </span>
-              <span>{formatRupiah(i.harga * i.jumlah)}</span>
+              <span>{formatRupiah(i.subtotal)}</span>
             </li>
           ))}
         </ul>
@@ -986,38 +1128,28 @@ function StrukModal({
           </span>
         </div>
 
-        {pesanan.status_bayar === "menunggu_bayar" && (
-          <div className="mt-6 rounded-2xl border border-primary/20 bg-cream p-4 text-center">
-            {pesanan.metode_bayar === "qris" ? (
-              <>
-                <p className="text-sm font-medium text-ink/75">
-                  Pindai kode QRIS berikut untuk membayar
-                </p>
-                <div className="mx-auto mt-4 flex h-40 w-40 items-center justify-center rounded-2xl border border-primary/25 bg-cream-light">
-                  <QrIcon className="h-24 w-24 text-primary" aria-hidden="true" />
-                </div>
-                <p className="mt-3 text-xs text-ink/60">
-                  Setelah membayar, tekan tombol di bawah. Kasir akan memverifikasi.
-                </p>
-              </>
-            ) : (
+        <div className="mt-6 rounded-2xl border border-primary/20 bg-cream p-4 text-center">
+          {pesanan.metode_bayar === "qris" ? (
+            <>
               <p className="text-sm font-medium text-ink/75">
-                Silakan bayar tunai di kasir. Kasir akan menandai pesanan sebagai lunas.
+                Pindai kode QRIS berikut untuk membayar
               </p>
-            )}
-          </div>
-        )}
-
-        <div className="mt-6 flex flex-col gap-2.5">
-          {pesanan.status_bayar === "menunggu_bayar" && (
-            <button
-              type="button"
-              onClick={() => setKonfirmasi(true)}
-              className="w-full rounded-full bg-primary py-3.5 text-sm font-semibold tracking-wide text-cream-light shadow-lg shadow-primary/30 transition hover:bg-primary-dark"
-            >
-              Saya Sudah Bayar
-            </button>
+              <div className="mx-auto mt-4 flex h-40 w-40 items-center justify-center rounded-2xl border border-primary/25 bg-cream-light">
+                <QrIcon className="h-24 w-24 text-primary" aria-hidden="true" />
+              </div>
+              <p className="mt-3 text-xs text-ink/60">
+                Kasir akan memverifikasi pembayaran lalu memproses pesananmu.
+              </p>
+            </>
+          ) : (
+            <p className="text-sm font-medium text-ink/75">
+              Silakan bayar tunai di kasir. Kasir akan menandai pesanan sebagai
+              lunas.
+            </p>
           )}
+        </div>
+
+        <div className="mt-6">
           <button
             type="button"
             onClick={onTutup}
@@ -1027,44 +1159,6 @@ function StrukModal({
           </button>
         </div>
       </div>
-
-      {konfirmasi && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 p-6 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Konfirmasi pembayaran"
-            className="anim-fade w-full max-w-sm rounded-3xl bg-cream-light p-6 text-center shadow-2xl"
-          >
-            <h3 className="font-display text-xl font-semibold text-primary">
-              Konfirmasi pembayaran?
-            </h3>
-            <p className="mt-2 text-sm text-ink/70">
-              Tandai pesanan {pesanan.nomor_pesanan} sebagai sudah dibayar.
-              Kasir tetap memverifikasi sebelum pesanan diproses.
-            </p>
-            <div className="mt-5 flex gap-2.5">
-              <button
-                type="button"
-                onClick={() => setKonfirmasi(false)}
-                className="flex-1 rounded-full border border-primary/30 py-2.5 text-sm font-semibold text-primary transition hover:bg-primary/10"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onBayar(pesanan.nomor_pesanan);
-                  setKonfirmasi(false);
-                }}
-                className="flex-1 rounded-full bg-primary py-2.5 text-sm font-semibold text-cream-light transition hover:bg-primary-dark"
-              >
-                Ya, sudah
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1083,7 +1177,7 @@ function RiwayatModal({
   nomorMeja,
   onTutup,
 }: {
-  riwayat: PesananLokal[];
+  riwayat: PesananTampil[];
   nomorMeja: string;
   onTutup: () => void;
 }) {
@@ -1136,6 +1230,9 @@ function RiwayatModal({
                     {LABEL_STATUS[p.status_pesanan]}
                   </span>
                 </div>
+                <p className="mt-0.5 text-xs text-ink/50">
+                  {formatWaktu(p.dibuat_pada)}
+                </p>
                 <ul className="mt-2 space-y-1 text-sm text-ink/75">
                   {p.items.map((i) => (
                     <li key={i.id_menu}>
