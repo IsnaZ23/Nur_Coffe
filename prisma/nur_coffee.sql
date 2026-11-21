@@ -20,6 +20,10 @@ CREATE TABLE kasir (
   dibuat_pada TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- Akun kasir awal: username `kasir`, kata sandi `kasir123` (bcrypt)
+INSERT INTO kasir (nama_kasir, username, kata_sandi, aktif) VALUES
+('Kasir Nur Coffee', 'kasir', '$2b$10$rIiXyqkjImxqKM8hykRKcetSGbEgsXVRd323.xFxUmVPbQvFVR/Ba', 1);
+
 -- 2. Tabel Kategori Menu (Coffee, Non Coffee, Dessert)
 CREATE TABLE kategori (
   id_kategori INT AUTO_INCREMENT PRIMARY KEY,
@@ -116,10 +120,10 @@ INSERT INTO kategori (nama_kategori, urutan_tampil) VALUES
 ('Dessert', 3);
 
 INSERT INTO menu (id_kategori, nama_menu, catatan_singkat, deskripsi, harga, gambar_menu, unggulan, tersedia) VALUES
-(1, 'Nur Signature Latte', 'freshly brewed', 'Espresso house blend dengan susu segar dan gula aren lembut.', 24000, '/uploads/menu/signature-latte.jpg', 1, 1),
-(1, 'Americano Classic', 'bold & clean', 'Ekstraksi ganda biji kopi pilihan disajikan hangat atau dingin.', 20000, '/uploads/menu/americano.jpg', 0, 1),
-(2, 'Matcha Cream Latte', 'calm sip', 'Matcha pilihan dengan tekstur creamy untuk suasana santai.', 26000, '/uploads/menu/matcha-latte.jpg', 1, 1),
-(3, 'Chocolate Cake', 'handmade taste', 'Kue cokelat lembut dengan lapisan ganache cokelat pekat.', 32000, '/uploads/menu/chocolate-cake.jpg', 1, 1);
+(1, 'Nur Signature Latte', 'freshly brewed', 'Espresso house blend dengan susu segar dan gula aren lembut.', 24000, NULL, 1, 1),
+(1, 'Americano Classic', 'bold & clean', 'Ekstraksi ganda biji kopi pilihan disajikan hangat atau dingin.', 20000, NULL, 0, 1),
+(2, 'Matcha Cream Latte', 'calm sip', 'Matcha pilihan dengan tekstur creamy untuk suasana santai.', 26000, NULL, 1, 1),
+(3, 'Chocolate Cake', 'handmade taste', 'Kue cokelat lembut dengan lapisan ganache cokelat pekat.', 32000, NULL, 1, 1);
 
 -- ============================================================================
 -- TRIGGER OTOMATIS STATUS MEJA (TERSEDIA <-> TERISI)
