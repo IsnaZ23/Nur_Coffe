@@ -9,265 +9,105 @@ datasource db {
 }
 
 model detail_pesanan {
-  id_detail      Int          @id @default(autoincrement())
-  id_pesanan     Int
-  id_menu        Int
-  id_menu_ukuran Int?
-  kuantitas      Int
-  harga_satuan   Int
-  ice_level      Int?         @db.TinyInt
-  sugar_level    Int?         @db.TinyInt
-  catatan        String?      @db.VarChar(255)
-  subtotal       Int
-  menu           menu         @relation(fields: [id_menu], references: [id_menu], onUpdate: Restrict, map: "fk_det_menu")
-  pesanan        pesanan      @relation(fields: [id_pesanan], references: [id_pesanan], onDelete: Cascade, onUpdate: Restrict, map: "fk_det_pesanan")
-  menu_ukuran    menu_ukuran? @relation(fields: [id_menu_ukuran], references: [id_menu_ukuran], onDelete: Restrict, onUpdate: Restrict, map: "fk_det_ukuran")
+  id_detail    Int     @id @default(autoincrement())
+  id_pesanan   Int
+  id_menu      Int
+  jumlah       Int     @default(1)
+  harga_satuan Int
+  subtotal     Int
+  catatan_item String? @db.VarChar(255)
+  menu         menu    @relation(fields: [id_menu], references: [id_menu], map: "fk_det_menu")
+  pesanan      pesanan @relation(fields: [id_pesanan], references: [id_pesanan], onDelete: Cascade, map: "fk_det_pesanan")
 
-  @@index([id_menu], map: "fk_det_menu")
-  @@index([id_menu_ukuran], map: "fk_det_ukuran")
-  @@index([id_pesanan], map: "idx_detail_pesanan")
+  @@index([id_menu], map: "fk_detail_menu")
+  @@index([id_pesanan], map: "fk_detail_pesanan")
 }
 
 model kategori {
-  id_kategori   Int      @id @default(autoincrement())
-  nama_kategori String   @db.VarChar(80)
-  slug          String   @unique(map: "uq_kategori_slug") @db.VarChar(80)
-  urutan_tampil Int      @default(0)
-  created_at    DateTime @default(now()) @db.DateTime(0)
+  id_kategori   Int       @id @default(autoincrement())
+  nama_kategori String    @unique(map: "nama_kategori") @db.VarChar(50)
+  urutan_tampil Int       @default(0)
+  dibuat_pada   DateTime? @default(now()) @db.Timestamp(0)
   menu          menu[]
 }
 
 model meja {
-  id_meja        Int                @id @default(autoincrement())
-  nomor_meja     String             @unique(map: "uq_meja_nomor") @db.VarChar(10)
-  kapasitas      Int
-  kode_qr        String             @unique(map: "uq_meja_qr") @db.VarChar(64)
-  kategori_meja  meja_kategori_meja @default(Fleksibel)
-  aktif          Boolean            @default(true)
-  created_at     DateTime           @default(now()) @db.DateTime(0)
-  updated_at     DateTime           @default(now()) @db.DateTime(0)
-  reservasi_meja reservasi_meja[]
-  sesi_meja      sesi_meja[]
+  id_meja     Int              @id @default(autoincrement())
+  nomor_meja  String           @unique(map: "nomor_meja") @db.VarChar(10)
+  kode_qr     String           @unique(map: "kode_qr") @db.VarChar(30)
+  status_meja meja_status_meja @default(tersedia)
+  dibuat_pada DateTime?        @default(now()) @db.Timestamp(0)
+  pesanan     pesanan[]
 }
 
 model menu {
-  id_menu         Int                  @id @default(autoincrement())
+  id_menu         Int              @id @default(autoincrement())
   id_kategori     Int
-  nama_menu       String               @db.VarChar(120)
-  deskripsi       String?              @db.Text
-  harga_dasar     Int
-  status_tersedia menu_status_tersedia @default(Tersedia)
-  gambar_menu     String?              @db.VarChar(255)
-  created_at      DateTime             @default(now()) @db.DateTime(0)
-  updated_at      DateTime             @default(now()) @db.DateTime(0)
+  nama_menu       String           @db.VarChar(100)
+  catatan_singkat String?          @db.VarChar(100)
+  deskripsi       String?          @db.Text
+  harga           Int
+  gambar_menu     String?          @db.VarChar(255)
+  unggulan        Boolean          @default(false)
+  tersedia        Boolean          @default(true)
+  dibuat_pada     DateTime?        @default(now()) @db.Timestamp(0)
+  diperbarui_pada DateTime?        @default(now()) @db.Timestamp(0)
   detail_pesanan  detail_pesanan[]
-  kategori        kategori             @relation(fields: [id_kategori], references: [id_kategori], onUpdate: Restrict, map: "fk_menu_kategori")
-  menu_ukuran     menu_ukuran[]
+  kategori        kategori         @relation(fields: [id_kategori], references: [id_kategori], map: "fk_menu_kategori")
 
   @@index([id_kategori], map: "fk_menu_kategori")
 }
 
-model menu_ukuran {
-  id_menu_ukuran Int              @id @default(autoincrement())
-  id_menu        Int
-  label          String           @db.VarChar(30)
-  extra_harga    Int              @default(0)
-  detail_pesanan detail_pesanan[]
-  menu           menu             @relation(fields: [id_menu], references: [id_menu], onDelete: Cascade, onUpdate: Restrict, map: "fk_ukuran_menu")
-
-  @@index([id_menu], map: "fk_ukuran_menu")
-}
-
-model pelanggan {
-  id_pelanggan Int            @id @default(autoincrement())
-  tipe         pelanggan_tipe
-  nama         String         @db.VarChar(100)
-  username     String?        @unique(map: "uq_pelanggan_username") @db.VarChar(50)
-  email        String?        @unique(map: "uq_pelanggan_email") @db.VarChar(150)
-  password     String?        @db.VarChar(255)
-  no_hp        String?        @db.VarChar(20)
-  created_at   DateTime       @default(now()) @db.DateTime(0)
-  updated_at   DateTime       @default(now()) @db.DateTime(0)
-  pesanan      pesanan[]
-  reservasi    reservasi[]
-  sesi_meja    sesi_meja[]
-}
-
-model pembayaran {
-  id_pembayaran             Int                                  @id @default(autoincrement())
-  id_pesanan                Int
-  order_id_gateway          String                               @unique(map: "uq_order_gateway") @db.VarChar(100)
-  metode_pembayaran         String                               @db.VarChar(30)
-  jumlah_bayar              Int
-  waktu_bayar               DateTime?                            @db.DateTime(0)
-  status_pembayaran_gateway pembayaran_status_pembayaran_gateway @default(Pending)
-  snap_token                String?                              @db.VarChar(255)
-  created_at                DateTime                             @default(now()) @db.DateTime(0)
-  pesanan                   pesanan                              @relation(fields: [id_pesanan], references: [id_pesanan], onUpdate: Restrict, map: "fk_bayar_pesanan")
-
-  @@index([id_pesanan], map: "idx_bayar_pesanan")
-}
-
 model pesanan {
-  id_pesanan     Int                    @id @default(autoincrement())
-  kode_pesanan   String                 @unique(map: "uq_kode_pesanan") @db.VarChar(30)
-  id_pelanggan   Int
-  id_sesi        Int?
-  id_reservasi   Int?
-  jenis_pesanan  pesanan_jenis_pesanan
-  waktu_pesan    DateTime               @default(now()) @db.DateTime(0)
-  subtotal       Int                    @default(0)
-  pajak          Int                    @default(0)
-  total_harga    Int                    @default(0)
-  status_pesanan pesanan_status_pesanan @default(menunggu_bayar)
-  created_at     DateTime               @default(now()) @db.DateTime(0)
-  updated_at     DateTime               @default(now()) @db.DateTime(0)
-  detail_pesanan detail_pesanan[]
-  pembayaran     pembayaran[]
-  pelanggan      pelanggan              @relation(fields: [id_pelanggan], references: [id_pelanggan], onUpdate: Restrict, map: "fk_pes_pelanggan")
-  reservasi      reservasi?             @relation(fields: [id_reservasi], references: [id_reservasi], onDelete: Restrict, onUpdate: Restrict, map: "fk_pes_reservasi")
-  sesi_meja      sesi_meja?             @relation(fields: [id_sesi], references: [id_sesi], onDelete: Restrict, onUpdate: Restrict, map: "fk_pes_sesi")
+  id_pesanan      Int                    @id @default(autoincrement())
+  nomor_pesanan   String                 @unique(map: "nomor_pesanan") @db.VarChar(30)
+  id_meja         Int
+  id_kasir        Int?
+  nama_pemesan    String                 @db.VarChar(100)
+  catatan_pesanan String?                @db.Text
+  total_harga     Int                    @default(0)
+  metode_bayar    pesanan_metode_bayar   @default(qris)
+  status_bayar    pesanan_status_bayar   @default(menunggu_bayar)
+  status_pesanan  pesanan_status_pesanan @default(menunggu_bayar)
+  dibuat_pada     DateTime?              @default(now()) @db.Timestamp(0)
+  diperbarui_pada DateTime?              @default(now()) @db.Timestamp(0)
+  detail_pesanan  detail_pesanan[]
+  kasir           kasir?                 @relation(fields: [id_kasir], references: [id_kasir], map: "fk_pesanan_kasir")
+  meja            meja                   @relation(fields: [id_meja], references: [id_meja], map: "fk_pesanan_meja")
 
-  @@index([id_pelanggan], map: "fk_pes_pelanggan")
-  @@index([id_reservasi], map: "fk_pes_reservasi")
-  @@index([id_sesi], map: "fk_pes_sesi")
-  @@index([waktu_pesan], map: "idx_pesanan_waktu")
+  @@index([id_kasir], map: "fk_pesanan_kasir")
+  @@index([id_meja], map: "fk_pesanan_meja")
 }
 
-model reservasi {
-  id_reservasi        Int                        @id @default(autoincrement())
-  id_pelanggan        Int
-  kode_reservasi      String                     @unique(map: "uq_kode_reservasi") @db.VarChar(30)
-  tanggal_reservasi   DateTime                   @db.Date
-  jam_mulai           DateTime                   @db.Time(0)
-  jumlah_tamu         Int
-  catatan             String?                    @db.Text
-  status_reservasi    reservasi_status_reservasi @default(Menunggu_Konfirmasi)
-  dibuat_oleh         reservasi_dibuat_oleh      @default(pelanggan)
-  id_staff_konfirmasi Int?
-  created_at          DateTime                   @default(now()) @db.DateTime(0)
-  updated_at          DateTime                   @default(now()) @db.DateTime(0)
-  pesanan             pesanan[]
-  pelanggan           pelanggan                  @relation(fields: [id_pelanggan], references: [id_pelanggan], onUpdate: Restrict, map: "fk_res_pelanggan")
-  staff               staff?                     @relation(fields: [id_staff_konfirmasi], references: [id_staff], onDelete: Restrict, onUpdate: Restrict, map: "fk_res_staff")
-  reservasi_meja      reservasi_meja[]
-  sesi_meja           sesi_meja[]
-
-  @@index([id_pelanggan], map: "fk_res_pelanggan")
-  @@index([id_staff_konfirmasi], map: "fk_res_staff")
-  @@index([tanggal_reservasi], map: "idx_reservasi_tanggal")
+model kasir {
+  id_kasir    Int       @id @default(autoincrement())
+  nama_kasir  String    @db.VarChar(100)
+  username    String    @unique(map: "username") @db.VarChar(50)
+  kata_sandi  String    @db.VarChar(255)
+  aktif       Boolean   @default(true)
+  dibuat_pada DateTime? @default(now()) @db.Timestamp(0)
+  pesanan     pesanan[]
 }
 
-model reservasi_meja {
-  id_reservasi_meja Int       @id @default(autoincrement())
-  id_reservasi      Int
-  id_meja           Int
-  meja              meja      @relation(fields: [id_meja], references: [id_meja], onUpdate: Restrict, map: "fk_rm_meja")
-  reservasi         reservasi @relation(fields: [id_reservasi], references: [id_reservasi], onDelete: Cascade, onUpdate: Restrict, map: "fk_rm_reservasi")
-
-  @@unique([id_reservasi, id_meja], map: "uq_res_meja")
-  @@index([id_meja], map: "idx_rm_meja")
+enum meja_status_meja {
+  tersedia
+  terisi
 }
 
-model sesi_meja {
-  id_sesi       Int              @id @default(autoincrement())
-  id_meja       Int
-  id_pelanggan  Int?
-  sumber        sesi_meja_sumber
-  id_reservasi  Int?
-  waktu_mulai   DateTime         @default(now()) @db.DateTime(0)
-  waktu_selesai DateTime?        @db.DateTime(0)
-  status        sesi_meja_status @default(aktif)
-  dibuat_oleh   Int?
-  pesanan       pesanan[]
-  meja          meja             @relation(fields: [id_meja], references: [id_meja], onUpdate: Restrict, map: "fk_sesi_meja")
-  pelanggan     pelanggan?       @relation(fields: [id_pelanggan], references: [id_pelanggan], onDelete: Restrict, onUpdate: Restrict, map: "fk_sesi_pelanggan")
-  reservasi     reservasi?       @relation(fields: [id_reservasi], references: [id_reservasi], onDelete: Restrict, onUpdate: Restrict, map: "fk_sesi_reservasi")
-  staff         staff?           @relation(fields: [dibuat_oleh], references: [id_staff], onDelete: Restrict, onUpdate: Restrict, map: "fk_sesi_staff")
-
-  @@index([id_pelanggan], map: "fk_sesi_pelanggan")
-  @@index([id_reservasi], map: "fk_sesi_reservasi")
-  @@index([dibuat_oleh], map: "fk_sesi_staff")
-  @@index([id_meja, status], map: "idx_sesi_meja_status")
+enum pesanan_metode_bayar {
+  qris
+  tunai
 }
 
-model staff {
-  id_staff     Int         @id @default(autoincrement())
-  nama         String      @db.VarChar(100)
-  email        String      @unique(map: "uq_staff_email") @db.VarChar(150)
-  password     String      @db.VarChar(255)
-  role         staff_role
-  status_aktif Boolean     @default(true)
-  created_at   DateTime    @default(now()) @db.DateTime(0)
-  updated_at   DateTime    @default(now()) @db.DateTime(0)
-  reservasi    reservasi[]
-  sesi_meja    sesi_meja[]
-}
-
-enum pelanggan_tipe {
-  member
-  guest
-}
-
-enum sesi_meja_sumber {
-  walk_in   @map("walk-in")
-  reservasi
-}
-
-enum meja_kategori_meja {
-  Walk_In   @map("Walk-In")
-  Reservasi
-  Fleksibel
-}
-
-enum staff_role {
-  admin
-  kasir
-}
-
-enum menu_status_tersedia {
-  Tersedia
-  Habis
-}
-
-enum pesanan_jenis_pesanan {
-  dine_in   @map("dine-in")
-  take_away @map("take-away")
-  delivery
-  pre_order @map("pre-order")
-}
-
-enum pembayaran_status_pembayaran_gateway {
-  Pending
-  Success
-  Failed
-  Expired
-}
-
-enum reservasi_status_reservasi {
-  Menunggu_Konfirmasi @map("Menunggu Konfirmasi")
-  Dikonfirmasi
-  Check_In            @map("Check-In")
-  Selesai
-  Batal
-  No_Show             @map("No-Show")
-}
-
-enum sesi_meja_status {
-  aktif
-  selesai
-}
-
-enum reservasi_dibuat_oleh {
-  pelanggan
-  admin
+enum pesanan_status_bayar {
+  menunggu_bayar
+  lunas
 }
 
 enum pesanan_status_pesanan {
   menunggu_bayar
-  dibayar
-  dibuat
-  siap
+  diproses
+  siap_saji
   selesai
-  batal
+  dibatalkan
 }

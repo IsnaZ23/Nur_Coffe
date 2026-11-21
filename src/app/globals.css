@@ -1,29 +1,83 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #6e3511;
+  --color-primary-dark: #55280c;
+  --color-primary-soft: #8a4a20;
+  --color-cream: #d2cf9a;
+  --color-cream-light: #f4f0dd;
+  --color-cream-deep: #c4c088;
+  --color-ink: #2b1a0e;
+
+  --font-display: var(--font-playfair), ui-serif, Georgia, serif;
+  --font-hand: var(--font-caveat), "Segoe Script", cursive;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background-color: #0c0a09; /* stone-950 */
-  color: #f5f5f4; /* stone-100 */
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body);
 }
 
-/* Kustomisasi scrollbar agar selaras dengan tema gelap */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1c1917; /* stone-900 */
+  background: #c4c088;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #44403c; /* stone-700 */
+  background: #8a4a20;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #f59e0b; /* amber-500 */
+  background: #6e3511;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes norFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes norFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.anim-up {
+  animation: norFadeUp 0.6s ease both;
+}
+
+.anim-fade {
+  animation: norFade 0.35s ease both;
 }
