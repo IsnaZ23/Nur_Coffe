@@ -1,20 +1,36 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Caveat, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const playfair = Playfair_Display({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
+  variable: "--font-playfair",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  variable: "--font-caveat",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Nur Coffe — Sistem Pemesanan & Reservasi",
-    template: "%s | Nur Coffe",
+    default: "Nur Coffee — Pesan dari Meja",
+    template: "%s | Nur Coffee",
   },
   description:
-    "Pesan kopi langsung dari meja lewat pemindaian QR atau lakukan reservasi meja dan pre-order secara online di Nur Coffe.",
+    "Nur Coffee — pesan menu langsung dari meja lewat pemindaian QR. Secangkir waktu hangat untuk setiap momen.",
 };
 
 export default function RootLayout({
@@ -23,10 +39,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className="dark">
-      <body
-        className={`${plusJakarta.className} min-h-screen bg-stone-950 text-stone-100 antialiased selection:bg-amber-500 selection:text-stone-950`}
-      >
+    <html
+      lang="id"
+      className={`${playfair.variable} ${caveat.variable} ${inter.variable}`}
+    >
+      <body className="min-h-screen bg-cream text-ink antialiased">
         {children}
       </body>
     </html>
