@@ -9,19 +9,19 @@ export default function LoginPage() {
   const [status, kirim, sedang] = useActionState(masuk, AWAL);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-primary px-5 py-16">
+    <main className="flex min-h-screen items-center justify-center bg-cream px-5 py-16">
       <div className="w-full max-w-sm">
         <div className="text-center">
-          <p className="font-hand text-2xl text-cream">welcome back</p>
-          <h1 className="mt-1 font-display text-3xl font-semibold text-cream-light">
+          <p className="font-hand text-2xl text-primary-soft">welcome back</p>
+          <h1 className="mt-1 font-display text-3xl font-semibold text-primary">
             Nur Coffee
           </h1>
-          <p className="mt-2 text-sm text-cream/75">Masuk sebagai kasir</p>
+          <p className="mt-2 text-sm text-ink/70">Masuk sebagai kasir</p>
         </div>
 
         <form
           action={kirim}
-          className="mt-8 rounded-[1.75rem] bg-cream-light p-6 shadow-2xl shadow-ink/30"
+          className="mt-8 rounded-[1.75rem] border border-primary/15 bg-cream-light p-6 shadow-2xl shadow-primary/25"
         >
           <label className="block">
             <span className="text-sm font-semibold text-primary">Username</span>
@@ -47,7 +47,7 @@ export default function LoginPage() {
           </label>
 
           {status.pesan && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-800">
+            <p role="alert" className="mt-3 text-sm font-medium text-primary-dark">
               {status.pesan}
             </p>
           )}

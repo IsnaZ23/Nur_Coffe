@@ -133,8 +133,8 @@ export default function KelolaMenuClient({
                     <span
                       className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
                         m.tersedia
-                          ? "bg-emerald-100 text-emerald-900"
-                          : "bg-red-100 text-red-900"
+                          ? "bg-primary text-cream-light"
+                          : "bg-primary/15 text-primary-dark"
                       }`}
                     >
                       {m.tersedia ? "Tersedia" : "Habis"}
@@ -153,7 +153,7 @@ export default function KelolaMenuClient({
                         <input type="hidden" name="id_menu" value={m.id_menu} />
                         <button
                           type="submit"
-                          className="rounded-full border border-red-300 px-3 py-1.5 text-[11px] font-semibold text-red-800 transition hover:bg-red-50"
+                          className="rounded-full border border-primary/35 px-3 py-1.5 text-[11px] font-semibold text-primary transition hover:bg-primary/10"
                         >
                           Hapus
                         </button>
@@ -193,7 +193,7 @@ export default function KelolaMenuClient({
                   <input type="hidden" name="id_kategori" value={k.id_kategori} />
                   <button
                     type="submit"
-                    className="rounded-full border border-red-300 px-3 py-1.5 text-[11px] font-semibold text-red-800 transition hover:bg-red-50"
+                    className="rounded-full border border-primary/35 px-3 py-1.5 text-[11px] font-semibold text-primary transition hover:bg-primary/10"
                   >
                     Hapus
                   </button>
@@ -300,7 +300,7 @@ export default function KelolaMenuClient({
                 name="tersedia"
                 type="checkbox"
                 defaultChecked={menuAktif ? menuAktif.tersedia : true}
-                className="h-4 w-4 accent-[#6e3511]"
+                className="h-4 w-4 accent-primary"
               />
               Tersedia
             </label>
@@ -309,19 +309,19 @@ export default function KelolaMenuClient({
                 name="unggulan"
                 type="checkbox"
                 defaultChecked={menuAktif?.unggulan ?? false}
-                className="h-4 w-4 accent-[#6e3511]"
+                className="h-4 w-4 accent-primary"
               />
               Unggulan
             </label>
           </div>
 
           {statusMenu.pesan && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-800">
+            <p role="alert" className="mt-3 text-sm font-medium text-primary-dark">
               {statusMenu.pesan}
             </p>
           )}
           {statusMenu.ok && (
-            <p className="mt-3 text-sm font-medium text-emerald-800">
+            <p className="mt-3 text-sm font-medium text-primary">
               {statusMenu.ok}
             </p>
           )}
@@ -384,12 +384,12 @@ export default function KelolaMenuClient({
           </label>
 
           {statusKategori.pesan && (
-            <p role="alert" className="mt-3 text-sm font-medium text-red-800">
+            <p role="alert" className="mt-3 text-sm font-medium text-primary-dark">
               {statusKategori.pesan}
             </p>
           )}
           {statusKategori.ok && (
-            <p className="mt-3 text-sm font-medium text-emerald-800">
+            <p className="mt-3 text-sm font-medium text-primary">
               {statusKategori.ok}
             </p>
           )}
