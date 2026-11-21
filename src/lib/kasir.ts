@@ -122,8 +122,22 @@ export async function riwayatPesanan(limit = 30): Promise<PesananAntre[]> {
 }
 
 export async function pesananPerMeja(kodeQr: string): Promise<PesananAntre[]> {
+  // ponytail: batas "sesi meja" = pesanan terakhir yang selesai/dibatalkan.
+  // Upgrade ke tabel sesi_meja kalau nanti butuh riwayat lintas shift per pelanggan.
+  const terakhirTutup = await prisma.pesanan.findFirst({
+    where: {
+      meja: { kode_qr: kodeQr },
+      status_pesanan: { in: ["selesai", "dibatalkan"] },
+    },
+    orderBy: { id_pesanan: "desc" },
+    select: { id_pesanan: true },
+  });
+
   const baris = await prisma.pesanan.findMany({
-    where: { meja: { kode_qr: kodeQr } },
+    where: {
+      meja: { kode_qr: kodeQr },
+      ...(terakhirTutup ? { id_pesanan: { gt: terakhirTutup.id_pesanan } } : {}),
+    },
     orderBy: { dibuat_pada: "desc" },
     take: 20,
     select: PILIH_PESANAN,
