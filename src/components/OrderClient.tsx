@@ -135,10 +135,24 @@ export default function OrderClient({
 
   const riwayatMeja = riwayat.filter((p) => p.kode_meja === kodeMeja);
 
+  const [diMenu, setDiMenu] = useState(false);
+
+  useEffect(() => {
+    const el = document.getElementById("menu");
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setDiMenu(entry.isIntersecting),
+      { threshold: 0.15 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <div className="relative overflow-x-hidden">
       <Navbar
         jumlahItem={jumlahItem}
+        jumlahRiwayat={riwayatMeja.length}
         nomorMeja={nomorMeja}
         onKeranjang={() => setKeranjangBuka(true)}
         onRiwayat={() => setRiwayatBuka(true)}
@@ -165,6 +179,13 @@ export default function OrderClient({
         }
       />
       <Maps />
+
+      <BarKeranjang
+        tampil={diMenu && !keranjangBuka && !checkout && !struk}
+        jumlahItem={jumlahItem}
+        total={total}
+        onLihat={() => setKeranjangBuka(true)}
+      />
 
       <KeranjangPanel
         buka={keranjangBuka}
@@ -221,13 +242,115 @@ function scrollKe(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function BarKeranjang({
+  tampil,
+  jumlahItem,
+  total,
+  onLihat,
+}: {
+  tampil: boolean;
+  jumlahItem: number;
+  total: number;
+  onLihat: () => void;
+}) {
+  return (
+    <div
+      className={`fixed inset-x-0 bottom-0 z-40 px-4 pb-4 transition-all duration-300 ${
+        tampil && jumlahItem > 0
+          ? "translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-24 opacity-0"
+      }`}
+      aria-hidden={!tampil || jumlahItem === 0}
+    >
+      <button
+        type="button"
+        onClick={onLihat}
+        className="mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-full bg-primary px-5 py-3.5 text-cream-light shadow-2xl shadow-primary/40 transition hover:bg-primary-dark"
+      >
+        <span className="inline-flex items-center gap-2.5">
+          <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-cream-light/15">
+            <BagIcon className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <span className="text-left">
+            <span className="block text-[11px] font-semibold tracking-wide text-cream/85">
+              {jumlahItem} item di keranjang
+            </span>
+            <span className="block font-display text-lg font-semibold">
+              {formatRupiah(total)}
+            </span>
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold tracking-wide">
+          Lihat Keranjang
+          <ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      </button>
+    </div>
+  );
+}
+
+
+function BadgeMeja({
+  nomorMeja,
+  padat,
+}: {
+  nomorMeja: string;
+  padat: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide ${
+        padat
+          ? "bg-primary text-cream-light"
+          : "bg-primary/85 text-cream-light backdrop-blur"
+      }`}
+    >
+      <PinIcon className="h-3.5 w-3.5" aria-hidden="true" />
+      Meja - {nomorMeja}
+    </span>
+  );
+}
+
+function TombolNavbar({
+  utama = false,
+  padat,
+  label,
+  children,
+  onClick,
+}: {
+  utama?: boolean;
+  padat: boolean;
+  label: string;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full transition ${
+        utama
+          ? "bg-primary text-cream-light shadow-lg shadow-primary/30 hover:bg-primary-dark"
+          : padat
+            ? "border border-primary/35 text-primary hover:bg-primary hover:text-cream-light"
+            : "border border-cream-light/60 text-cream-light backdrop-blur hover:bg-cream-light/15"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function Navbar({
   jumlahItem,
+  jumlahRiwayat,
   nomorMeja,
   onKeranjang,
   onRiwayat,
 }: {
   jumlahItem: number;
+  jumlahRiwayat: number;
   nomorMeja: string;
   onKeranjang: () => void;
   onRiwayat: () => void;
@@ -242,7 +365,7 @@ function Navbar({
   }, []);
 
   const tautan = [
-    { label: "Explore", id: "explore" },
+    { label: "Home", id: "explore" },
     { label: "About", id: "about" },
     { label: "Menu", id: "menu" },
     { label: "Maps", id: "maps" },
@@ -256,40 +379,10 @@ function Navbar({
           : "bg-transparent"
       }`}
     >
-      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
-        <ul
-          className={`hidden items-center gap-7 text-sm font-medium tracking-wide md:flex ${
-            padat ? "text-ink" : "text-cream-light"
-          }`}
-        >
-          {tautan.map((t) => (
-            <li key={t.id}>
-              <button
-                type="button"
-                onClick={() => scrollKe(t.id)}
-                className="transition-colors hover:text-primary-soft focus-visible:text-primary-soft focus-visible:outline-none"
-                style={padat ? undefined : { textShadow: "0 1px 6px rgba(43,26,14,.6)" }}
-              >
-                {t.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex items-center gap-2.5 md:gap-3">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3.5">
+        <div className="flex items-center gap-5">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide ${
-              padat
-                ? "bg-primary text-cream-light"
-                : "bg-primary/85 text-cream-light backdrop-blur"
-            }`}
-          >
-            <PinIcon className="h-3.5 w-3.5" aria-hidden="true" />
-            Meja - {nomorMeja}
-          </span>
-
-          <span
-            className={`font-display text-lg italic font-semibold ${
+            className={`font-display text-lg italic font-semibold tracking-wide ${
               padat ? "text-primary" : "text-cream-light"
             }`}
             style={padat ? undefined : { textShadow: "0 1px 8px rgba(43,26,14,.6)" }}
@@ -297,23 +390,47 @@ function Navbar({
             Nur Coffee
           </span>
 
-          <button
-            type="button"
-            onClick={onRiwayat}
-            className={`hidden rounded-full border px-4 py-1.5 text-xs font-semibold tracking-wide transition sm:inline-flex ${
-              padat
-                ? "border-primary/40 text-primary hover:bg-primary hover:text-cream-light"
-                : "border-cream-light/60 text-cream-light hover:bg-cream-light/15 backdrop-blur"
+          <ul
+            className={`hidden items-center gap-6 text-sm font-medium tracking-wide md:flex ${
+              padat ? "text-ink" : "text-cream-light"
             }`}
           >
-            Riwayat Order
-          </button>
+            {tautan.map((t) => (
+              <li key={t.id}>
+                <button
+                  type="button"
+                  onClick={() => scrollKe(t.id)}
+                  className="transition-colors hover:text-primary-soft focus-visible:text-primary-soft focus-visible:outline-none"
+                  style={padat ? undefined : { textShadow: "0 1px 6px rgba(43,26,14,.6)" }}
+                >
+                  {t.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-          <button
-            type="button"
+        <div className="flex items-center justify-end gap-2">
+          <BadgeMeja nomorMeja={nomorMeja} padat={padat} />
+
+          <TombolNavbar
+            padat={padat}
+            label={`Buka riwayat order, ${jumlahRiwayat} pesanan`}
+            onClick={onRiwayat}
+          >
+            <ReceiptIcon className="h-5 w-5" aria-hidden="true" />
+            {jumlahRiwayat > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-cream-light px-1 text-[11px] font-bold text-primary">
+                {jumlahRiwayat}
+              </span>
+            )}
+          </TombolNavbar>
+
+          <TombolNavbar
+            utama
+            padat={padat}
+            label={`Buka keranjang, ${jumlahItem} item`}
             onClick={onKeranjang}
-            aria-label={`Buka keranjang, ${jumlahItem} item`}
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-cream-light shadow-lg shadow-primary/30 transition hover:bg-primary-dark"
           >
             <BagIcon className="h-5 w-5" aria-hidden="true" />
             {jumlahItem > 0 && (
@@ -321,7 +438,7 @@ function Navbar({
                 {jumlahItem}
               </span>
             )}
-          </button>
+          </TombolNavbar>
         </div>
       </nav>
     </header>
@@ -342,11 +459,7 @@ function Hero({ onExplore }: { onExplore: () => void }) {
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/80 via-ink/65 to-primary-dark/90" />
 
       <div className="mx-auto flex min-h-[100svh] max-w-3xl flex-col items-center justify-center px-6 text-center">
-        <span className="anim-fade inline-flex h-16 w-16 items-center justify-center rounded-full border border-cream-light/40 bg-cream-light/10 backdrop-blur">
-          <CupIcon className="h-8 w-8 text-cream-light" aria-hidden="true" />
-        </span>
-
-        <p className="anim-up mt-6 font-hand text-2xl text-cream">
+        <p className="anim-up font-hand text-2xl text-cream">
           freshly brewed everyday
         </p>
 
