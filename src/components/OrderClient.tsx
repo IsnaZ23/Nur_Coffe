@@ -1026,7 +1026,7 @@ function CheckoutModal({
         </div>
 
         {galat && (
-          <p role="alert" className="mt-3 text-sm font-medium text-red-800">
+          <p role="alert" className="mt-3 text-sm font-medium text-primary-dark">
             {galat}
           </p>
         )}

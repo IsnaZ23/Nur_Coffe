@@ -22,11 +22,11 @@ const LABEL: Record<pesanan_status_pesanan, string> = {
 };
 
 const WARNA: Record<pesanan_status_pesanan, string> = {
-  menunggu_bayar: "bg-amber-100 text-amber-900",
+  menunggu_bayar: "bg-primary/15 text-primary-dark",
   diproses: "bg-primary/15 text-primary",
-  siap_saji: "bg-emerald-100 text-emerald-900",
+  siap_saji: "bg-primary text-cream-light",
   selesai: "bg-ink/10 text-ink/70",
-  dibatalkan: "bg-red-100 text-red-900",
+  dibatalkan: "bg-primary-dark text-cream-light",
 };
 
 export default async function KasirPage() {
@@ -126,7 +126,7 @@ export default async function KasirPage() {
                       disabled={s === "dibatalkan" && p.status_pesanan === "dibatalkan"}
                       className={`rounded-full border px-4 py-2 text-xs font-semibold transition disabled:opacity-40 ${
                         s === "dibatalkan"
-                          ? "border-red-300 text-red-800 hover:bg-red-50"
+                          ? "border-primary/50 text-primary-dark hover:bg-primary/15"
                           : "border-primary/35 text-primary hover:bg-primary/10"
                       }`}
                     >
