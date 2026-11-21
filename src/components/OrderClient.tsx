@@ -1134,8 +1134,14 @@ function StrukModal({
               <p className="text-sm font-medium text-ink/75">
                 Pindai kode QRIS berikut untuk membayar
               </p>
-              <div className="mx-auto mt-4 flex h-40 w-40 items-center justify-center rounded-2xl border border-primary/25 bg-cream-light">
-                <QrIcon className="h-24 w-24 text-primary" aria-hidden="true" />
+              <div className="relative mx-auto mt-4 h-56 w-56 overflow-hidden rounded-2xl border border-primary/25 bg-cream-light">
+                <Image
+                  src="/images/qris.jpeg"
+                  alt="Kode QRIS pembayaran Nur Coffee"
+                  fill
+                  sizes="224px"
+                  className="object-contain p-2"
+                />
               </div>
               <p className="mt-3 text-xs text-ink/60">
                 Kasir akan memverifikasi pembayaran lalu memproses pesananmu.
