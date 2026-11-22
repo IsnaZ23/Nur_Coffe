@@ -592,6 +592,12 @@ function MenuSection({
   daftar: MenuItem[];
   onTambah: (menu: MenuItem) => void;
 }) {
+  const [cari, setCari] = useState("");
+  const kata = cari.trim().toLowerCase();
+  const hasil = kata
+    ? daftar.filter((m) => m.nama_menu.toLowerCase().includes(kata))
+    : daftar;
+
   return (
     <section id="menu" className="bg-cream-light px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl">
@@ -607,7 +613,18 @@ function MenuSection({
           </div>
         </header>
 
-        <div className="mt-9 flex flex-wrap justify-center gap-2">
+        <div className="mx-auto mt-8 max-w-md">
+          <input
+            type="search"
+            value={cari}
+            onChange={(e) => setCari(e.target.value)}
+            placeholder="Cari menu…"
+            aria-label="Cari menu"
+            className="w-full rounded-full border border-primary/25 bg-cream px-5 py-3 text-sm text-ink outline-none transition placeholder:text-ink/40 focus:border-primary/60"
+          />
+        </div>
+
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
           <div className="inline-flex flex-wrap justify-center gap-1 rounded-full border border-primary/20 bg-cream p-1.5 shadow-sm">
             {kategori.map((k) => (
               <button
@@ -627,13 +644,13 @@ function MenuSection({
           </div>
         </div>
 
-        {daftar.length === 0 ? (
+        {hasil.length === 0 ? (
           <p className="mt-16 text-center font-hand text-2xl text-primary/60">
-            belum ada menu di kategori ini
+            {kata ? "menu tidak ditemukan" : "belum ada menu di kategori ini"}
           </p>
         ) : (
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {daftar.map((menu) => (
+            {hasil.map((menu) => (
               <KartuMenu key={menu.id_menu} menu={menu} onTambah={onTambah} />
             ))}
           </div>
