@@ -1,6 +1,7 @@
 import { antreanPesanan, riwayatPesanan } from "@/lib/kasir";
 import { formatRupiah } from "@/lib/format";
 import { aksiKonfirmasiBayar, aksiUbahStatus } from "./actions";
+import TombolStruk from "./Struk";
 import type { pesanan_status_pesanan } from "@/generated/prisma/enums";
 
 export const metadata = { title: "Antrean Pesanan" };
@@ -154,12 +155,13 @@ export default async function KasirPage() {
                 <th className="px-4 py-3 font-semibold">Total</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Kasir</th>
+                <th className="px-4 py-3 font-semibold">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {riwayat.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-ink/60">
+                  <td colSpan={7} className="px-4 py-6 text-center text-ink/60">
                     Belum ada transaksi.
                   </td>
                 </tr>
@@ -180,6 +182,9 @@ export default async function KasirPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-ink/60">{p.nama_kasir ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <TombolStruk pesanan={p} />
+                  </td>
                 </tr>
               ))}
             </tbody>

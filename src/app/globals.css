@@ -81,3 +81,25 @@ body {
 .anim-fade {
   animation: norFade 0.35s ease both;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .struk-cetak,
+  .struk-cetak * {
+    visibility: visible;
+  }
+  .struk-cetak {
+    position: absolute;
+    inset: 0;
+    max-height: none;
+    max-width: 80mm;
+    margin: 0 auto;
+    box-shadow: none;
+    overflow: visible;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

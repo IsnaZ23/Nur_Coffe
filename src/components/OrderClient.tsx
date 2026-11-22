@@ -1,7 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { KategoriItem, MenuItem } from "@/lib/katalog";
 import { formatRupiah, formatWaktu } from "@/lib/format";
 import {
@@ -43,7 +49,7 @@ function useKeranjang() {
   return useSyncExternalStore(
     storeKeranjang.langganan,
     storeKeranjang.baca,
-    storeKeranjang.server
+    storeKeranjang.server,
   );
 }
 
@@ -119,7 +125,7 @@ export default function OrderClient({
 }) {
   const kategori = useMemo(
     () => katalog.filter((k) => k.menu.length > 0),
-    [katalog]
+    [katalog],
   );
   const [tab, setTab] = useState<number>(kategori[0]?.id_kategori ?? 0);
   const [keranjangBuka, setKeranjangBuka] = useState(false);
@@ -133,13 +139,10 @@ export default function OrderClient({
   const total = totalKeranjang(items);
   const jumlahItem = items.reduce((n, i) => n + i.jumlah, 0);
 
-  const semuaMenu = useMemo(
-    () => kategori.flatMap((k) => k.menu),
-    [kategori]
-  );
+  const semuaMenu = useMemo(() => kategori.flatMap((k) => k.menu), [kategori]);
   const unggulan = useMemo(
     () => semuaMenu.filter((m) => m.unggulan && m.tersedia).slice(0, 3),
-    [semuaMenu]
+    [semuaMenu],
   );
 
   const menuTab = kategori.find((k) => k.id_kategori === tab);
@@ -158,7 +161,7 @@ export default function OrderClient({
     if (!el) return;
     const io = new IntersectionObserver(
       ([entry]) => setDiMenu(entry.isIntersecting),
-      { threshold: 0.15 }
+      { threshold: 0.15 },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -180,7 +183,11 @@ export default function OrderClient({
         kategori={kategori}
         tab={tab}
         setTab={setTab}
-        judul={unggulan.length > 0 && tab === kategori[0]?.id_kategori ? "Best Seller" : "Our Menu"}
+        judul={
+          unggulan.length > 0 && tab === kategori[0]?.id_kategori
+            ? "Best Seller"
+            : "Our Menu"
+        }
         daftar={daftarMenu}
         onTambah={(menu) =>
           tambahItem(
@@ -190,7 +197,7 @@ export default function OrderClient({
               harga: menu.harga,
               gambar_menu: menu.gambar_menu,
             },
-            kodeMeja
+            kodeMeja,
           )
         }
       />
@@ -252,7 +259,9 @@ export default function OrderClient({
 }
 
 function scrollKe(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  document
+    .getElementById(id)
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function BarKeranjang({
@@ -301,7 +310,6 @@ function BarKeranjang({
     </div>
   );
 }
-
 
 function BadgeMeja({
   nomorMeja,
@@ -398,7 +406,9 @@ function Navbar({
             className={`font-display text-lg italic font-semibold tracking-wide ${
               padat ? "text-primary" : "text-cream-light"
             }`}
-            style={padat ? undefined : { textShadow: "0 1px 8px rgba(43,26,14,.6)" }}
+            style={
+              padat ? undefined : { textShadow: "0 1px 8px rgba(43,26,14,.6)" }
+            }
           >
             Nur Coffee
           </span>
@@ -414,7 +424,11 @@ function Navbar({
                   type="button"
                   onClick={() => scrollKe(t.id)}
                   className="transition-colors hover:text-primary-soft focus-visible:text-primary-soft focus-visible:outline-none"
-                  style={padat ? undefined : { textShadow: "0 1px 6px rgba(43,26,14,.6)" }}
+                  style={
+                    padat
+                      ? undefined
+                      : { textShadow: "0 1px 6px rgba(43,26,14,.6)" }
+                  }
                 >
                   {t.label}
                 </button>
@@ -460,7 +474,10 @@ function Navbar({
 
 function Hero({ onExplore }: { onExplore: () => void }) {
   return (
-    <section id="explore" className="relative isolate min-h-[100svh] overflow-hidden">
+    <section
+      id="explore"
+      className="relative isolate min-h-[100svh] overflow-hidden"
+    >
       <Image
         src="/images/bg_coffee.jpg"
         alt=""
@@ -506,7 +523,10 @@ function Hero({ onExplore }: { onExplore: () => void }) {
           style={{ animationDelay: "260ms" }}
         >
           Explore Menu
-          <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          <ArrowRightIcon
+            className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
         </button>
       </div>
     </section>
@@ -545,15 +565,14 @@ function About() {
 
           <div className="mt-6 space-y-4 text-[15px] leading-relaxed text-ink/80">
             <p>
-              Nur Coffee lahir dari kebiasaan kecil: menyeduh kopi tanpa tergesa,
-              menemani pagi yang tenang, dan menyisakan ruang untuk percakapan
-              panjang.
+              Nur Coffee lahir dari kebiasaan kecil: menyeduh kopi tanpa
+              tergesa, menemani pagi yang tenang, dan menyisakan ruang untuk
+              percakapan panjang.
             </p>
             <p>
               Setiap biji kopi kami pilih dengan teliti dan disangrai dalam
               porsi kecil agar rasanya tetap segar. Susu, gula aren, hingga
-              matcha — semuanya diracik untuk kenyamanan, bukan sekadar
-              kekuatan.
+              matcha semuanya diracik untuk kenyamanan , bukan sekadar kekuatan.
             </p>
             <p>
               Semoga setiap kunjungan terasa seperti pulang: hangat, akrab, dan
@@ -775,7 +794,10 @@ function KeranjangPanel({
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {items.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
-              <BagIcon className="h-12 w-12 text-primary/35" aria-hidden="true" />
+              <BagIcon
+                className="h-12 w-12 text-primary/35"
+                aria-hidden="true"
+              />
               <p className="mt-4 font-hand text-2xl text-primary/60">
                 keranjang masih kosong
               </p>
@@ -843,7 +865,9 @@ function KeranjangPanel({
                     <input
                       type="text"
                       value={item.catatan_item ?? ""}
-                      onChange={(e) => ubahCatatan(item.id_menu, e.target.value)}
+                      onChange={(e) =>
+                        ubahCatatan(item.id_menu, e.target.value)
+                      }
                       placeholder="cth. less ice, tanpa gula"
                       className="mt-1 w-full rounded-xl border border-primary/20 bg-cream-light px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/40 focus:border-primary/60"
                     />
@@ -1043,7 +1067,10 @@ function CheckoutModal({
         </div>
 
         {galat && (
-          <p role="alert" className="mt-3 text-sm font-medium text-primary-dark">
+          <p
+            role="alert"
+            className="mt-3 text-sm font-medium text-primary-dark"
+          >
             {galat}
           </p>
         )}
@@ -1118,10 +1145,7 @@ function StrukModal({
             nilai={pesanan.metode_bayar === "qris" ? "QRIS" : "Tunai"}
           />
           <Baris label="Pembayaran" nilai={LABEL_BAYAR[pesanan.status_bayar]} />
-          <Baris
-            label="Status"
-            nilai={LABEL_STATUS[pesanan.status_pesanan]}
-          />
+          <Baris label="Status" nilai={LABEL_STATUS[pesanan.status_pesanan]} />
         </dl>
 
         <ul className="mt-4 space-y-2 text-sm text-ink/80">
@@ -1130,7 +1154,9 @@ function StrukModal({
               <span>
                 {i.jumlah}× {i.nama_menu}
                 {i.catatan_item && (
-                  <em className="block text-xs text-ink/55">“{i.catatan_item}”</em>
+                  <em className="block text-xs text-ink/55">
+                    “{i.catatan_item}”
+                  </em>
                 )}
               </span>
               <span>{formatRupiah(i.subtotal)}</span>
@@ -1233,7 +1259,10 @@ function RiwayatModal({
 
         {riwayat.length === 0 ? (
           <div className="flex flex-col items-center py-14 text-center">
-            <ClockIcon className="h-12 w-12 text-primary/35" aria-hidden="true" />
+            <ClockIcon
+              className="h-12 w-12 text-primary/35"
+              aria-hidden="true"
+            />
             <p className="mt-4 font-hand text-2xl text-primary/60">
               belum ada riwayat pesanan
             </p>
@@ -1283,7 +1312,10 @@ function RiwayatModal({
 
 function Maps() {
   return (
-    <section id="maps" className="bg-primary px-6 py-20 text-cream-light sm:py-24">
+    <section
+      id="maps"
+      className="bg-primary px-6 py-20 text-cream-light sm:py-24"
+    >
       <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-2">
         <div>
           <p className="font-hand text-2xl text-cream/85">find us here</p>
@@ -1297,11 +1329,17 @@ function Maps() {
 
           <ul className="mt-8 space-y-4 text-sm">
             <li className="flex items-start gap-3">
-              <PinIcon className="mt-0.5 h-5 w-5 shrink-0 text-cream" aria-hidden="true" />
+              <PinIcon
+                className="mt-0.5 h-5 w-5 shrink-0 text-cream"
+                aria-hidden="true"
+              />
               <span>{ALAMAT}</span>
             </li>
             <li className="flex items-start gap-3">
-              <ClockIcon className="mt-0.5 h-5 w-5 shrink-0 text-cream" aria-hidden="true" />
+              <ClockIcon
+                className="mt-0.5 h-5 w-5 shrink-0 text-cream"
+                aria-hidden="true"
+              />
               <span>{JAM_BUKA}</span>
             </li>
           </ul>
@@ -1324,12 +1362,17 @@ function Maps() {
           <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(#f4f0dd33_1px,transparent_1px),linear-gradient(90deg,#f4f0dd33_1px,transparent_1px)] [background-size:34px_34px]" />
           <div className="relative flex h-full min-h-56 flex-col items-center justify-center text-center">
             <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-cream-light/15">
-              <PinIcon className="h-8 w-8 text-cream-light" aria-hidden="true" />
+              <PinIcon
+                className="h-8 w-8 text-cream-light"
+                aria-hidden="true"
+              />
             </span>
             <p className="mt-4 font-display text-2xl font-semibold">
               Nur Coffee
             </p>
-            <p className="font-hand text-xl text-cream/80">Kediri, Jawa Timur</p>
+            <p className="font-hand text-xl text-cream/80">
+              Kediri, Jawa Timur
+            </p>
           </div>
         </div>
       </div>
