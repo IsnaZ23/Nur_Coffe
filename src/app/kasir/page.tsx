@@ -2,7 +2,7 @@ import { antreanPesanan, riwayatPesanan } from "@/lib/kasir";
 import { formatRupiah } from "@/lib/format";
 import { aksiKonfirmasiBayar, aksiUbahStatus } from "./actions";
 import TombolStruk from "./Struk";
-import type { pesanan_status_pesanan } from "@/generated/prisma/enums";
+import type { pesanan_status_pesanan } from "@prisma/client";
 
 export const metadata = { title: "Antrean Pesanan" };
 export const dynamic = "force-dynamic";
