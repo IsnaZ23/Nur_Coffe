@@ -3,7 +3,7 @@ import type {
   pesanan_metode_bayar,
   pesanan_status_bayar,
   pesanan_status_pesanan,
-} from "@/generated/prisma/enums";
+} from "@prisma/client";
 
 export type PesananAntre = {
   id_pesanan: number;

@@ -13,7 +13,7 @@ import {
   perbaruiKategori,
   perbaruiMenu,
 } from "@/lib/katalog";
-import type { pesanan_status_pesanan } from "@/generated/prisma/enums";
+import type { pesanan_status_pesanan } from "@prisma/client";
 
 export type StatusAksi = { pesan?: string; ok?: string };
 
