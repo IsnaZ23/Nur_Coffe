@@ -1,10 +1,9 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { wajibSesi } from "@/lib/sesi";
+import { unggahGambar, hapusGambar } from "@/lib/cloudinary";
 import { ubahStatusPesanan, konfirmasiPembayaran } from "@/lib/kasir";
 import {
   buatKategori,
@@ -39,19 +38,7 @@ async function simpanGambar(berkas: File): Promise<string> {
     throw new Error("Ukuran gambar maksimal 2 MB.");
   }
 
-  const ekstensi = berkas.name.split(".").pop()?.toLowerCase() ?? "jpg";
-  const aman = path
-    .basename(berkas.name, `.${ekstensi}`)
-    .replace(/[^a-zA-Z0-9-_]/g, "-")
-    .slice(0, 40);
-  const nama = `${aman || "menu"}-${Date.now().toString(36)}.${ekstensi}`;
-
-  // ponytail: tulis ke public/ saat runtime; cukup untuk dev. Pindah ke storage/CDN saat produksi.
-  const folder = path.join(process.cwd(), "public", "uploads", "menu");
-  await mkdir(folder, { recursive: true });
-  await writeFile(path.join(folder, nama), Buffer.from(await berkas.arrayBuffer()));
-
-  return `/uploads/menu/${nama}`;
+  return unggahGambar(berkas);
 }
 
 export async function aksiUbahStatus(formData: FormData) {
@@ -90,11 +77,14 @@ export async function aksiSimpanMenu(
   if (harga <= 0) return { pesan: "Harga harus lebih dari nol." };
 
   const berkas = formData.get("gambar");
-  let gambar: string | null = teks(formData, "gambar_lama") || null;
+  const gambarLama = teks(formData, "gambar_lama") || null;
+  let gambar: string | null = gambarLama;
+  let gambarBaru: string | null = null;
 
   try {
     if (berkas instanceof File && berkas.size > 0) {
-      gambar = await simpanGambar(berkas);
+      gambarBaru = await simpanGambar(berkas);
+      gambar = gambarBaru;
     }
   } catch (e) {
     return { pesan: e instanceof Error ? e.message : "Gagal mengunggah gambar." };
@@ -115,7 +105,12 @@ export async function aksiSimpanMenu(
     if (id) await perbaruiMenu(id, data);
     else await buatMenu(data);
   } catch {
+    if (gambarBaru) await hapusGambar(gambarBaru);
     return { pesan: "Gagal menyimpan menu." };
+  }
+
+  if (gambarBaru && gambarLama && gambarLama !== gambarBaru) {
+    await hapusGambar(gambarLama);
   }
 
   revalidatePath("/kasir/menu");
@@ -126,7 +121,8 @@ export async function aksiSimpanMenu(
 export async function aksiHapusMenu(formData: FormData) {
   await wajibSesi();
   try {
-    await hapusMenu(angka(formData, "id_menu"));
+    const terhapus = await hapusMenu(angka(formData, "id_menu"));
+    await hapusGambar(terhapus.gambar_menu);
   } catch (e) {
     redirect(
       `/kasir/menu?galat=${encodeURIComponent(
